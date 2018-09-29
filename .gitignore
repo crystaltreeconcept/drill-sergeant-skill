@@ -1,0 +1,8 @@
+# idea specific
+.idea/**
+project/target/**
+project/project/**
+lib_managed/**
+target/**
+utils/**
+*sc

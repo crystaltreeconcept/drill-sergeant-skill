@@ -14,6 +14,9 @@ object skillSetup {
     , new LaunchRequestHandler
     , new SessionEndedRequestHandler
     , new PersonalizedReportingInIntentHandler
+    , new GivenPersonHasTheNewTaskIntentHandler
+    , new  RosterAddIntentHandler
+    , new  RosterListIntentHandler
   )
 
   def skills: Skill = {
