@@ -1,8 +1,5 @@
 package org.crystaltreecode.pocask1
 
-import java.io.{InputStream, OutputStream}
-
-import com.amazonaws.services.lambda.runtime.Context
 import org.scalatest.FunSuite
 
 class DrillSkillSetStreamHandlerTest extends FunSuite {

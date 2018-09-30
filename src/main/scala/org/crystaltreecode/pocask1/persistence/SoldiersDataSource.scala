@@ -1,30 +1,31 @@
-package org.crystaltreecode.pocask1.handlers
+package org.crystaltreecode.pocask1.persistence
 
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.dynamodbv2.model.DeleteItemResult
 import com.amazonaws.services.dynamodbv2.{AmazonDynamoDB, AmazonDynamoDBClientBuilder}
-import com.gu.scanamo.{Table, _}
 import com.gu.scanamo.error.DynamoReadError
 import com.gu.scanamo.ops.ScanamoOps
+import com.gu.scanamo.query.AttributeNotExists
 import com.gu.scanamo.syntax._
+import com.gu.scanamo.{Scanamo, Table}
+
 
 /**
   * Basically a Users data provider: register new, list, retire
  */
 
-
-
 // DynamoDB ops
 
 object SoldiersDataSource {
 
-  case class SoldierRecord(userId:String, name:String)
-  val rosterTable = Table[SoldierRecord]("Roster")
+  case class SoldierRecord(userId:String, soldierName:String)
+
+  val rosterTable: Table[SoldierRecord] = Table[SoldierRecord]("Soldiers")
 
   val client:AmazonDynamoDB = AmazonDynamoDBClientBuilder.standard()
     .withRegion(Regions.US_EAST_1)
-    .withCredentials(new ProfileCredentialsProvider("app-1-development"))
+    .withCredentials(new DefaultAWSCredentialsProviderChain())
     .build()
 //  val client:AmazonDynamoDBClient = new AmazonDynamoDBClient(
 //    new AWSCredentialsProviderChain(
@@ -38,18 +39,20 @@ object SoldiersDataSource {
 
   def listRosterNames(userId:String): List[Either[DynamoReadError, SoldierRecord]] = {
     def getAllOperation:ScanamoOps[List[Either[DynamoReadError, SoldierRecord]]] = rosterTable.query('userId -> userId)
-    def results:List[Either[DynamoReadError, SoldierRecord]] = Scanamo.exec(client)(getAllOperation)
+    //def getAllOperation:ScanamoOps[Option[Either[DynamoReadError, SoldierRecord]]] = rosterTable.get('userId -> userId and 'soldierName -> "Dima")
+    //def getAllOperation:ScanamoOps[List[Either[DynamoReadError, SoldierRecord]]] = rosterTable.scan
+    def results:List[Either[DynamoReadError, SoldierRecord]] = Scanamo.exec(client)(getAllOperation).toList
     results
   }
 
   def registerNewSoldier(userId:String, soldierName:String): Option[Either[DynamoReadError, SoldierRecord]] = {
-    def putOperation:ScanamoOps[Option[Either[DynamoReadError, SoldierRecord]]] = rosterTable.put(new SoldierRecord(userId, soldierName))
+    def putOperation:ScanamoOps[Option[Either[DynamoReadError, SoldierRecord]]] = rosterTable.put(SoldierRecord(userId, soldierName))
     def results:Option[Either[DynamoReadError, SoldierRecord]] = Scanamo.exec(client)(putOperation)
     results
   }
 
   def retireSoldier(userId:String, soldierName:String): DeleteItemResult = {
-    def putOperation:ScanamoOps[DeleteItemResult] = rosterTable.delete('userId -> userId)
+    def putOperation:ScanamoOps[DeleteItemResult] = rosterTable.delete('userId -> userId and 'soldierName ->soldierName)
     def results:DeleteItemResult = Scanamo.exec(client)(putOperation)
     results
   }

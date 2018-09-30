@@ -7,8 +7,9 @@ import com.amazon.ask.dispatcher.request.handler.{HandlerInput, RequestHandler}
 import com.amazon.ask.model.{IntentRequest, Response, Slot}
 import com.amazon.ask.request.Predicates.intentName
 import com.gu.scanamo.error.DynamoReadError
+import org.crystaltreecode.pocask1.persistence.SoldiersDataSource
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 
 /**
@@ -18,16 +19,21 @@ import scala.util.{Failure, Success, Try}
   */
 class RosterAddIntentHandler extends RequestHandler {
 
+  import org.apache.logging.log4j.{LogManager, Logger}
+
+  val logger: Logger = LogManager.getLogger(classOf[RosterAddIntentHandler])
+
   def canHandle(input: HandlerInput): Boolean =
     input.matches(intentName("RosterAddIntent"))
 
   def handle(input: HandlerInput): Optional[Response] = {
+    logger.info("going to handle " + input.toString)
     //this is not a Rookie name, just the household user to strip users by
     val userId = input.getRequestEnvelope.getSession.getUser.getUserId
+    logger.info(s"userId is <$userId>")
 
     val request = input.getRequestEnvelope.getRequest.asInstanceOf[IntentRequest]
     val slots: util.Map[String, Slot] = request.getIntent.getSlots
-
 
     def makeError(string:String) = input.getResponseBuilder
       .withSpeech("Sorry didn't get what's your name, rookie")
@@ -35,16 +41,19 @@ class RosterAddIntentHandler extends RequestHandler {
       .withShouldEndSession(true)
       .build
 
-    Try {
+    val result = Try {
       slots.get("RookieName") //TODO: find nice constants place
     } map { slot:Slot =>
+      logger.info(s"found slot: <$slot>")
 
       val maybeInsertedRecord:Option[Either[DynamoReadError, SoldiersDataSource.SoldierRecord]]
         = SoldiersDataSource.registerNewSoldier(input.getRequestEnvelope.getSession.getUser.getUserId, slot.getValue)
 
+      logger.info(s"inserted Record: <$maybeInsertedRecord>")
+
       //TODO: re-factor this piece, we'll need single routine of multiple mapping ideally
       maybeInsertedRecord match {
-        case Some(Right(_)) =>
+        case None | Some(Right(_)) =>
           input.getResponseBuilder
             .withSpeech("Ok, I'll make sure we record this " + slot.getValue)
             .withSimpleCard("DrillSergeant", "Ok, I'll make sure we record this" + slot.getValue)
@@ -56,38 +65,10 @@ class RosterAddIntentHandler extends RequestHandler {
       makeError("No slot name <RookieName>?")
     )
 
+    logger.info(s"the result is: <$result>")
+
+    result
+
   }
-
-
-//  case Failure(errorString) => input
-//    .getResponseBuilder()
-//    .withSpeech("Sorry didn't get what's your name, rookie")
-//    .withSimpleCard("DrillSergeant", errorString.getMessage)
-//    .withShouldEndSession(false)
-//    .build
-//
-//    val listUsersResult:List[Either[DynamoReadError, SoldiersDataSource.Soldier]]
-//          = SoldiersDataSource.registerNewSoldier()
-//
-//    //TODO: process and log the errors properly
-//    //TODO: do smart check on SOUNDING LIKE existing users, we don't want to promote confusion
-//
-//    val soldierNames:List[String] = listUsersResult.collect({
-//      case Right(soldier) => soldier.name
-//    })
-//    val errors:List[String] = listUsersResult.collect({
-//      case Left(error) => error.toString
-//    })
-//
-//    val speechText = s"Your roster for today is: ${soldierNames.mkString(", ")}"
-//
-//    val cardText:String = if (errors.isEmpty) speechText else errors.mkString(", ")
-//
-//    input
-//      .getResponseBuilder
-//      .withSpeech(speechText)
-//      .withSimpleCard("DrillSergeant", cardText)
-//      .withShouldEndSession(false)
-//      .build
 
 }

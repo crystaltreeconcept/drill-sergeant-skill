@@ -25,10 +25,7 @@ lazy val commonSettings = Seq(
   organization := "org.crystaltreecode",
   version := "1.0",
   scalaVersion := "2.12",
-  test in assembly := {}
 )
-
-logLevel in assembly := Level.Debug
 
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).settings()

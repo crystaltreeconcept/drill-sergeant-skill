@@ -14,7 +14,7 @@ class RosterAddIntentHandlerTest extends FlatSpec
 with Checkers
 with MockFactory {
 
-  val user: User = User.builder().withUserId("uniqueUserIdKindOf42").build()
+  val user: User = User.builder().withUserId("integrationTestUserId").build()
   val session: Session = Session.builder().withUser(user).build()
 
   /*
@@ -22,7 +22,6 @@ with MockFactory {
     val request = input.getRequestEnvelope.getRequest.asInstanceOf[IntentRequest]
     val slots: util.Map[String, Slot] = request.getIntent.getSlots
    */
-
 
   val request: Request = IntentRequest.builder()
     .withIntent(
